@@ -8,7 +8,11 @@
 import Foundation
 @testable import ExpiringStorage
 
-final class ExpiringStorageWithFixedCurrentTime: ExpiringStorage<Int> {
+protocol ExpringStorageWithCurrentTimeType: ExpiringStorageType {
+	var currentTime: Date { get }
+}
+
+final class ExpiringStorageWithFixedCurrentTime: ExpiringStorage<Int>, ExpringStorageWithCurrentTimeType {
 	var fixedTime: Date
 	
 	init(expirationInterval: TimeInterval, currentTime: Date) {

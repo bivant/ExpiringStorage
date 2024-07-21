@@ -8,13 +8,14 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		storage = ExpiringStorageWithFixedCurrentTime(expirationInterval: 10)
 	}
 	
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
-    }
+	private func printStorage() {
+		// XCTest Documentation
+		// https://developer.apple.com/documentation/xctest
+		
+		// Defining Test Cases and Test Methods
+		// https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+		print("Storage elements \(storage.elements.map{ $0.0 })")
+	}
 	
 	func test_numberOfValidElements() {
 		(0..<12).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
@@ -56,7 +57,6 @@ final class ExpiringStoragePublicTests: XCTestCase {
 
 	func test_nextValid_2For2Of2Valid() {
 		(0..<2).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
-//		XCTAssertEqual(storage.nextValid, 0)
 		_ = storage.nextValid
 		XCTAssertEqual(storage.nextValid, 1)
 	}
@@ -87,9 +87,20 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
 		_ = storage.nextValid
 		_ = storage.nextValid
+		_ = storage.nextValid
 		storage.clearExpired()
-//		print("storage elements \(storage.elements.map{ $0.0 })")
-		XCTAssertEqual(storage.nextValid, 2)
+		XCTAssertEqual(storage.nextValid, 3)
+	}
+	
+	func test_newValid_nilAfterClearExpired() {
+		zip(0..<5, 5..<10).reduce([Int]()) { arrayResult, pair in
+			let (lesser, bigger) = pair
+			return arrayResult + [lesser, bigger]
+		}.forEach { storage.addNew($0, withOffset: TimeInterval(-$0)); print($0) }
+		storage.fixedTime = storage.fixedTime.addingTimeInterval(10)
+		_ = storage.nextValid
+		storage.clearExpired()
+		XCTAssertEqual(storage.nextValid, nil)
 	}
 	
 	func test_newValid_afterClearExpiredOverEdge() {
@@ -101,7 +112,6 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		_ = storage.nextValid
 		XCTAssertEqual(storage.nextValid, 1)
 		storage.clearExpired()
-//		print("storage elements \(storage.elements.map{ $0.0 })")
 		XCTAssertEqual(storage.nextValid, 2)
 		XCTAssertEqual(storage.nextValid, 0)
 		XCTAssertEqual(storage.nextValid, 1)
@@ -118,7 +128,6 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		XCTAssertEqual(storage.nextValid, 6)
 		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
 		storage.clearExpired()
-//		print("storage elements \(storage.elements.map{ $0.0 })")
 		XCTAssertEqual(storage.nextValid, 2)
 		XCTAssertEqual(storage.nextValid, 3)
 		XCTAssertEqual(storage.nextValid, 0)
@@ -134,21 +143,37 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		_ = storage.nextValid
 		XCTAssertEqual(storage.nextValid, 6)
 		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
-//		print("storage elements \(storage.elements.map{ $0.0 })")
 		XCTAssertEqual(storage.nextValid, 2)
 		storage.clearExpired()
 		XCTAssertEqual(storage.nextValid, 3)
 		XCTAssertEqual(storage.nextValid, 0)
 	}
-
-//	func test_nextValid_correctForMixedValidInvalid_inverted() {
-//		(0..<2).reversed().forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
-//		_ = storage.nextValid
-//		_ = storage.nextValid
-//		XCTAssertEqual(storage.nextValid, 0)
-//	}
 	
-//	func test_nextValid
+	func test_newValid_clearExpired_nextExpiredUntilEdgeWithDelayedClear() {
+		(3..<10).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
+		_ = storage.nextValid
+		_ = storage.nextValid
+		XCTAssertEqual(storage.nextValid, 5)
+		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
+		storage.clearExpired()
+		XCTAssertEqual(storage.nextValid, 3)
+		XCTAssertEqual(storage.nextValid, 4)
+		XCTAssertEqual(storage.nextValid, 3)
+	}
+	
+	func test_newValid_clearExpired_nextExpiredLastElementWithDelayedClear() {
+		(3..<10).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
+		storage.addNew(0, withOffset: TimeInterval(0))
+		_ = storage.nextValid
+		_ = storage.nextValid
+		XCTAssertEqual(storage.nextValid, 5)
+		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
+		storage.clearExpired()
+		XCTAssertEqual(storage.nextValid, 0)
+		XCTAssertEqual(storage.nextValid, 3)
+		XCTAssertEqual(storage.nextValid, 4)
+		XCTAssertEqual(storage.nextValid, 0)
+	}
 	
 	//MARK: - addNew
 	func test_addNew_addsElement() {
@@ -178,7 +203,7 @@ final class ExpiringStoragePublicTests: XCTestCase {
 //		print("storage elements \(storage.elements.map{ $0.0 })")
 	}
 	
-	func test_clearExpired_afterCurrentTimeChange_Inverted() {
+	func test_clearExpired_afterCurrentTimeChange_inverted() {
 		(0..<10).reversed().forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
 		XCTAssertEqual(storage.elements.count, 10)
 		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)

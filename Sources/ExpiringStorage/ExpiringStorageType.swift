@@ -16,7 +16,3 @@ public protocol ExpiringStorageType: AnyObject {
 	func clearExpired()
 	func removeAll()
 }
-
-protocol ExpringStorageWithCurrentTimeType: ExpiringStorageType {
-	var currentTime: Date { get }
-}

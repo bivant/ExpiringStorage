@@ -16,7 +16,7 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 	}
 	
 	private(set) var elements = [ElementWithDate]()
-	private(set) var lastProvidedElementIndex: Int = -1
+	private(set) var lastProvidedElementIndex: Int?
 	
 	func isElementValid(_ elementDate: ElementWithDate) -> Bool {
 		currentTime.timeIntervalSince(elementDate.1) < expirationInterval
@@ -43,26 +43,23 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 	}
 	
 	public var nextValid: T? {
-		let validElements = validElements()
-		if lastProvidedElementIndex >= 0 {
-			if validElements.isEmpty {
-				removeAll()
-				return nil
-			}
-			lastProvidedElementIndex += 1
-
-			let numberOfValidElements = validElements.count
-			if lastProvidedElementIndex >= numberOfValidElements {
-				lastProvidedElementIndex = 0
-			}
-			return validElements[lastProvidedElementIndex]
-		} else {
-			if !validElements.isEmpty {
-				lastProvidedElementIndex = 0
+		if let lastProvidedElementIndex {
+			let elementsRemainder = elements[lastProvidedElementIndex + 1..<elements.count]
+			if !elementsRemainder.isEmpty, let firstValidIndex = elementsRemainder.firstIndex(where: { isElementValid($0) }) {
+				self.lastProvidedElementIndex = firstValidIndex
+				return elements[firstValidIndex].0
 			} else {
-				removeAll()
+				elements.removeLast(elementsRemainder.count)
 			}
-			return validElements.first
+		}
+		
+		let firstValidIndex = elements.firstIndex { isElementValid($0) }
+		if let firstValidIndex {
+			lastProvidedElementIndex = firstValidIndex
+			return elements[firstValidIndex].0
+		} else {
+			removeAll()
+			return nil
 		}
 	}
 	
@@ -80,17 +77,14 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 		}
 		indexesToRemove.reversed().forEach { indexToDelete in
 			elements.remove(at: indexToDelete)
-			if indexToDelete <= lastProvidedElementIndex {
-				lastProvidedElementIndex -= 1
+			if let lastIndex = self.lastProvidedElementIndex, indexToDelete <= lastIndex {
+				self.lastProvidedElementIndex = lastIndex - 1
 			}
 		}
 	}
 	
 	public func removeAll() {
 		elements = .init()
-		lastProvidedElementIndex = -1
+		lastProvidedElementIndex = nil
 	}
-}
-
-extension ExpiringStorage: ExpringStorageWithCurrentTimeType {
 }

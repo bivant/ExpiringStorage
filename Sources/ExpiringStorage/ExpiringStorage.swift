@@ -45,7 +45,8 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 	public var nextValid: T? {
 		if let lastProvidedElementIndex {
 			let elementsRemainder = elements[lastProvidedElementIndex + 1..<elements.count]
-			if !elementsRemainder.isEmpty, let firstValidIndex = elementsRemainder.firstIndex(where: { isElementValid($0) }) {
+			if !elementsRemainder.isEmpty,
+			   let firstValidIndex = elementsRemainder.firstIndex(where: isElementValid) {
 				self.lastProvidedElementIndex = firstValidIndex
 				return elements[firstValidIndex].0
 			} else {
@@ -53,8 +54,7 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 			}
 		}
 		
-		let firstValidIndex = elements.firstIndex { isElementValid($0) }
-		if let firstValidIndex {
+		if let firstValidIndex = elements.firstIndex(where: isElementValid) {
 			lastProvidedElementIndex = firstValidIndex
 			return elements[firstValidIndex].0
 		} else {

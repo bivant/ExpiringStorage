@@ -10,19 +10,17 @@ import Foundation
 open class ExpiringStorage<T>: ExpiringStorageType {
 	private let expirationInterval: TimeInterval
 	typealias ElementWithDate = (T, Date)
-	
+	private(set) var elements = [ElementWithDate]()
+	private(set) var lastProvidedElementIndex: Int?
+	var currentTime: Date { Date() }
+
 	required public init(expirationInterval: TimeInterval) {
 		self.expirationInterval = expirationInterval
 	}
 	
-	private(set) var elements = [ElementWithDate]()
-	private(set) var lastProvidedElementIndex: Int?
-	
 	func isElementValid(_ elementDate: ElementWithDate) -> Bool {
 		currentTime.timeIntervalSince(elementDate.1) < expirationInterval
 	}
-	
-	var currentTime: Date { Date() }
 	
 	func validElements() -> [T] {
 		elements.compactMap({ elementDate in
@@ -35,13 +33,21 @@ open class ExpiringStorage<T>: ExpiringStorageType {
 		clearExpired()
 		elements.append((element, date))
 	}
+}
 
-	//MARK: - ExpiringStorageType
-	
+extension ExpiringStorage: ExpiringStorageTypeReading {
+	//MARK: - ExpiringStorageTypeReading
 	public var numberOfValidElements: Int {
 		validElements().count
 	}
 	
+	public var allValid: any Collection<ExpiringElement> {
+		validElements()
+	}
+}
+
+extension ExpiringStorage: ExpiringStorageTypeMutating {
+	//MARK: - ExpiringStorageTypeMutating
 	public var nextValid: T? {
 		if let lastProvidedElementIndex {
 			let elementsRemainder = elements[lastProvidedElementIndex + 1..<elements.count]

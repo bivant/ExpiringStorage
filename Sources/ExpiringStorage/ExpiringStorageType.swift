@@ -7,12 +7,20 @@
 
 import Foundation
 
-public protocol ExpiringStorageType: AnyObject {
+public protocol ExpiringStorageType: ExpiringStorageTypeReading, ExpiringStorageTypeMutating {
 	init(expirationInterval: TimeInterval)
+}
+
+public protocol ExpiringStorageTypeReading {
 	associatedtype ExpiringElement
 	var numberOfValidElements: Int { get }
+	var allValid: any Collection<ExpiringElement> { get }
+}
+
+public protocol ExpiringStorageTypeMutating {
+	associatedtype ExpiringElement
 	var nextValid: ExpiringElement? { get }
-	func addNew(_: ExpiringElement)
-	func clearExpired()
-	func removeAll()
+	mutating func addNew(_: ExpiringElement)
+	mutating func clearExpired()
+	mutating func removeAll()
 }

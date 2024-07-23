@@ -6,6 +6,12 @@ final class ExpiringStoragePublicTests: XCTestCase {
 	
 	override func setUp() {
 		storage = ExpiringStorageWithFixedCurrentTime(expirationInterval: 10)
+		
+//		this snippet creates array with interlaced/mixed items - [0, 5, 1, 6, 2, 7, ...]
+//		zip(0..<5, 5..<10).reduce([Int]()) { arrayResult, pair in
+//			let (lesser, bigger) = pair
+//			return arrayResult + [lesser, bigger]
+//		}.forEach { storage.addNew($0, withOffset: TimeInterval(-$0)); print($0) }
 	}
 	
 	private func printStorage() {
@@ -175,6 +181,20 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		XCTAssertEqual(storage.nextValid, 0)
 	}
 	
+	func test_newValid_nilAfterRemoveAll() {
+		(0..<5).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
+		storage.removeAll()
+		XCTAssertNil(storage.nextValid)
+	}
+	
+	func test_newValid_afterRemoveAllAndAddNew() {
+		(0..<5).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
+		storage.removeAll()
+		storage.addNew(element: 0, date: Date())
+		XCTAssertEqual(storage.nextValid, 0)
+		XCTAssertEqual(storage.nextValid, 0)
+	}
+	
 	//MARK: - addNew
 	func test_addNew_addsElement() {
 		XCTAssertTrue(storage.elements.isEmpty)
@@ -200,7 +220,6 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
 		storage.clearExpired()
 		XCTAssertEqual(storage.elements.count, 5)
-//		print("storage elements \(storage.elements.map{ $0.0 })")
 	}
 	
 	func test_clearExpired_afterCurrentTimeChange_inverted() {
@@ -216,5 +235,21 @@ final class ExpiringStoragePublicTests: XCTestCase {
 		XCTAssertFalse(storage.elements.isEmpty)
 		storage.removeAll()
 		XCTAssertTrue(storage.elements.isEmpty)
+	}
+	
+	//MARK: - allValid
+	
+	func test_allValid() {
+		(0..<5).forEach { storage.addNew($0, withOffset: TimeInterval(-$0)) }
+		XCTAssertEqual(storage.allValid.sorted(), [0, 1, 2, 3, 4])
+	}
+	
+	func test_allValid_afterCurrentTimeChange() {
+		zip(0..<5, 5..<10).reduce([Int]()) { arrayResult, pair in
+			let (lesser, bigger) = pair
+			return arrayResult + [lesser, bigger]
+		}.forEach { storage.addNew($0, withOffset: TimeInterval(-$0)); print($0) }
+		storage.fixedTime = storage.fixedTime.addingTimeInterval(5)
+		XCTAssertEqual(storage.allValid.sorted(), [0, 1, 2, 3, 4])
 	}
 }
